@@ -75,8 +75,6 @@ def compose_layers(layers):
 
     return out
 
-
-
 def infer_move(before_state, after_state):
 
     removed = []
@@ -158,8 +156,6 @@ def setup():
 
     button = Button("GPIO26")
 
-
-
 def piece_position_highlights(current_state, turn_highlighting):
     for i in range(len(current_state)):
         if current_state[i] == 2:
@@ -191,108 +187,12 @@ def show_move_diff(expected_state, actual_state):
 
     ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
 
-
 def wait_for_board_state(target_state):
     """Blocks until sensors match the expected target_state."""
     while True:
         if ardunio_connect.read_sensors(arduino) == target_state:
             return
         time.sleep(0.05)
-
-setup()
-
-board = chess.Board()
-
-
-def on_button_press():
-    global button_pressed
-    button_pressed = True
-
-
-
-button.when_pressed = on_button_press
-
-button_pressed = False
-ready_for_button = False
-waiting_for_corrections = False
-
-removed = []
-
-old_led_buffer = led_buffer_01
-
-highlighted_squares = []
-
-layer_piece_positions = LEDLayer()
-layer_highlights = LEDLayer()
-base = LEDLayer()
-effects = LEDLayer()
-other_player_moves = LEDLayer()
-
-
-layers = [
-    base,
-    
-    layer_piece_positions,
-    layer_highlights,
-    other_player_moves,
-    effects,
-    
-]
-
-# Todo:
-# Detect pieces being lifted and show legal legal moves
-# - done
-# Add waiting for board setup before start
-# - done
-# Add handling for when an illegal move is made
-# - done
-# Add en-pasent, castling and promotion
-# Add win condition checking
-# Led stuff (efffects, piece highlighting)
-# - piece highlighting done
-# Intergrate chess engine
-# Add online play
-
-for i in range(NUM_LEDS):
-    row = i // 8
-    col = i % 8
-    if (row + col) % 2 == 0:
-        set_led_layer(base, i, COLOR_WHITE_SQUARES)   # dark square
-    else:
-        set_led_layer(base, i, COLOR_BLACK_SQUARES)  # light square
-
-ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
-
-time.sleep(2)
-
-
-
-
-
-# Wait until sensors match board position
-target_state = board_to_state(board)
-
-old_state = ardunio_connect.read_sensors(arduino)
-
-old_state_for_lift_detection = ardunio_connect.read_sensors(arduino)
-
-ready = False
-while not ready:
-    current_state = ardunio_connect.read_sensors(arduino)
-    
-    piece_position_highlights(current_state, False)
-    
-    ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
-
-
-    # Compare all 64 squares
-    if current_state == target_state:
-        ready = True
-
-old_state = ardunio_connect.read_sensors(arduino)
-
-old_state_for_lift_detection = ardunio_connect.read_sensors(arduino)
-
 
 def player_turn(board):
 
@@ -368,18 +268,96 @@ def player_turn(board):
             effects.clear()
             waiting_for_corrections = False
 
+setup()
+
+board = chess.Board()
+
+def on_button_press():
+    global button_pressed
+    button_pressed = True
+
+button.when_pressed = on_button_press
+
+button_pressed = False
+ready_for_button = False
+waiting_for_corrections = False
+
+removed = []
+
+old_led_buffer = led_buffer_01
+
+highlighted_squares = []
+
+layer_piece_positions = LEDLayer()
+layer_highlights = LEDLayer()
+base = LEDLayer()
+effects = LEDLayer()
+other_player_moves = LEDLayer()
+
+
+layers = [
+    base,   
+    layer_piece_positions,
+    layer_highlights,
+    other_player_moves,
+    effects,
+    
+]
+
+# Todo:
+# Detect pieces being lifted and show legal legal moves
+# - done
+# Add waiting for board setup before start
+# - done
+# Add handling for when an illegal move is made
+# - done
+# Add en-pasent, castling and promotion
+# Add win condition checking
+# Led stuff (efffects, piece highlighting)
+# - piece highlighting done
+# Intergrate chess engine
+# Add online play
+
+for i in range(NUM_LEDS):
+    row = i // 8
+    col = i % 8
+    if (row + col) % 2 == 0:
+        set_led_layer(base, i, COLOR_WHITE_SQUARES)   # dark square
+    else:
+        set_led_layer(base, i, COLOR_BLACK_SQUARES)  # light square
+
+ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
+
+time.sleep(2)
+
+# Wait until sensors match board position
+target_state = board_to_state(board)
+
+old_state = ardunio_connect.read_sensors(arduino)
+old_state_for_lift_detection = ardunio_connect.read_sensors(arduino)
+
+ready = False
+
+while not ready:
+    current_state = ardunio_connect.read_sensors(arduino)
+    
+    piece_position_highlights(current_state, False)
+    
+    ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
+
+    if current_state == target_state:
+        ready = True
+
 print("ready")
 
+old_state = ardunio_connect.read_sensors(arduino)
+old_state_for_lift_detection = ardunio_connect.read_sensors(arduino)
+
 while not board.is_checkmate():
-
     if board.turn == chess.WHITE:
-
         player_turn(board)
 
     elif board.turn == chess.BLACK:
-
         player_turn(board)
-
-
 
 print("la fin")
