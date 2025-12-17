@@ -294,6 +294,79 @@ old_state = ardunio_connect.read_sensors(arduino)
 old_state_for_lift_detection = ardunio_connect.read_sensors(arduino)
 
 
+def player_turn(board):
+
+    global old_state
+    global old_state_for_lift_detection
+    global button_pressed
+    global waiting_for_corrections
+
+    current_state = ardunio_connect.read_sensors(arduino)
+
+    piece_position_highlights(current_state, True)
+
+    ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
+
+    for square in range(len(old_state_for_lift_detection)):
+        # Piece lifted
+        if old_state_for_lift_detection[square] != 0 and current_state[square] == 0:
+            piece = board.piece_at(square)
+            # Skip if no piece present in the board model at that square
+            if piece is None:
+                continue
+
+            # Only highlight if the lifted piece belongs to the side to move
+            if piece.color == board.turn:
+                legal_moves = list(board.legal_moves)
+                set_led_layer(layer_highlights, square, COLOR_HIGHLIFT)  # lifted square = blue
+                highlighted_squares.append(square)
+
+                for move in legal_moves:
+                    if move.from_square == square:
+                        highlighted_squares.append(move.to_square)
+                        # highlight legal destination squares
+                        if board.is_capture(move):
+                            set_led_layer(layer_highlights, move.to_square, COLOR_CAPTURE)  # capture = red
+                        else:
+                            set_led_layer(layer_highlights, move.to_square, COLOR_LEGAL_MOVE) # normal move = green
+
+        # Piece placed
+        elif old_state_for_lift_detection[square] == 0 and current_state[square] != 0:
+            layer_highlights.clear()
+
+    old_state_for_lift_detection = current_state
+    
+    if button_pressed:
+        button_pressed = False
+        if not waiting_for_corrections:
+            move = infer_move(old_state, current_state)
+            if move != "nomove": # there was something that moved:
+                if move == "invalid": # it could not be infered
+                    print("cannot infer move, please put pieces to previous locations")
+                    for i in range(len(old_state)):
+                        if old_state[i] != 0:
+                            set_led_layer(effects, i, COLOR_ERROR)
+                    waiting_for_corrections = True
+                    print(old_state)
+                    print(current_state)
+                else: # Found move
+                    print(move)
+                    try:
+                        board.push_uci(move)
+                        print(board)
+                        old_state = current_state
+                    except:
+                        for i in range(len(old_state)):
+                            if old_state[i] != 0:
+                                set_led_layer(effects, i, COLOR_ERROR)
+                        print("illegal move")
+                        print(old_state)
+                        print(current_state)
+
+        elif current_state == old_state:
+            print("pieces have been corrected, moving on")
+            effects.clear()
+            waiting_for_corrections = False
 
 print("ready")
 
@@ -301,103 +374,12 @@ while not board.is_checkmate():
 
     if board.turn == chess.WHITE:
 
-        current_state = ardunio_connect.read_sensors(arduino)
-
-        piece_position_highlights(current_state, True)
-
-        ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
-
-        for square in range(len(old_state_for_lift_detection)):
-            # Piece lifted
-            if old_state_for_lift_detection[square] != 0 and current_state[square] == 0:
-                piece = board.piece_at(square)
-                # Skip if no piece present in the board model at that square
-                if piece is None:
-                    continue
-
-                # Only highlight if the lifted piece belongs to the side to move
-                if piece.color == board.turn:
-                    legal_moves = list(board.legal_moves)
-                    set_led_layer(layer_highlights, square, COLOR_HIGHLIFT)  # lifted square = blue
-                    highlighted_squares.append(square)
-
-                    for move in legal_moves:
-                        if move.from_square == square:
-                            highlighted_squares.append(move.to_square)
-                            # highlight legal destination squares
-                            if board.is_capture(move):
-                                set_led_layer(layer_highlights, move.to_square, COLOR_CAPTURE)  # capture = red
-                            else:
-                                set_led_layer(layer_highlights, move.to_square, COLOR_LEGAL_MOVE) # normal move = green
-
-            # Piece placed
-            elif old_state_for_lift_detection[square] == 0 and current_state[square] != 0:
-                layer_highlights.clear()
-
-        old_state_for_lift_detection = current_state
-        
-        if button_pressed:
-            button_pressed = False
-            if not waiting_for_corrections:
-                move = infer_move(old_state, current_state)
-                if move != "nomove": # there was something that moved:
-                    if move == "invalid": # it could not be infered
-                        print("cannot infer move, please put pieces to previous locations")
-                        for i in range(len(old_state)):
-                            if old_state[i] != 0:
-                                set_led_layer(effects, i, COLOR_ERROR)
-                        waiting_for_corrections = True
-                        print(old_state)
-                        print(current_state)
-                    else: # Found move
-                        print(move)
-                        try:
-                            board.push_uci(move)
-                            print(board)
-                            old_state = current_state
-                        except:
-                            for i in range(len(old_state)):
-                                if old_state[i] != 0:
-                                    set_led_layer(effects, i, COLOR_ERROR)
-                            print("illegal move")
-                            print(old_state)
-                            print(current_state)
-
-            elif current_state == old_state:
-                print("pieces have been corrected, moving on")
-                effects.clear()
-                waiting_for_corrections = False
+        player_turn(board)
 
     elif board.turn == chess.BLACK:
-                
-        piece_position_highlights(current_state, True)
 
-        temp_board = board
+        player_turn(board)
 
-        engine_choice = engine.play(board, chess.engine.Limit(time=0.1))
-
-        temp_board.push(engine_choice.move)
-
-        expected_state = board_to_state(temp_board)
-        actual_state   = ardunio_connect.read_sensors(arduino)
-
-        # Show guidance
-        show_move_diff(expected_state, actual_state)
-
-        # Wait until user has physically made the move
-        wait_for_board_state(expected_state)
-
-        # Clear LED hints and commit
-        other_player_moves.clear()
-        ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
-
-        board = temp_board
-
-        old_state = ardunio_connect.read_sensors(arduino)
-
-
-        print(board)
-        
 
 
 print("la fin")
