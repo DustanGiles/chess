@@ -369,9 +369,11 @@ layers = [
 # - done
 # Add en-pasent, castling and promotion
 # Add win condition checking
+# - done
 # Led stuff (efffects, piece highlighting)
 # - piece highlighting done
 # Intergrate chess engine
+# - done
 # Add online play
 
 for i in range(NUM_LEDS):
@@ -394,6 +396,7 @@ old_state_for_lift_detection = ardunio_connect.read_sensors(arduino)
 while not board.is_checkmate():
     if board.turn == chess.WHITE:
         player_turn(board)
+        # stockfish_turn(board)
 
     elif board.turn == chess.BLACK:
         stockfish_turn(board)
