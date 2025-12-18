@@ -75,44 +75,20 @@ def compose_layers(layers):
 
     return out
 
-def infer_move(before_state, after_state):
+def infer_move_by_simulation(before_state, after_state, board):
+    """
+    Infers the move by simulating all legal moves and comparing resulting board states.
+    Returns the move in UCI format if a match is found, else "invalid".
+    """
+    for move in board.legal_moves:
+        temp_board = board.copy()
+        temp_board.push(move)
+        simulated_state = board_to_state(temp_board)
 
-    removed = []
-    added = []
+        if simulated_state == after_state:
+            return move.uci()
 
-    if before_state == after_state: # Well, thats not much of a move...
-        return "nomove"
-        
-    for square in range(len(before_state)):
-        if before_state[square] != 0 and after_state[square] == 0: # If piece was there and is now not there:
-            removed.append((square, before_state[square])) # Add square and piece color to removed pieces
-
-        if before_state[square] == 0 and after_state[square] != 0: # If piece was not there and is there:
-            added.append((square, after_state[square])) # Add square and piece color to added pieces
-    
-    # Normal Move
-    if len(removed) == 1 and len(added) == 1: # Exactly 1 piece was added and removed
-        if removed[0][1] == added[0][1]: # If added and removed square are the same color:
-
-            from_square = index_to_alg(removed[0][0])
-            to_square = index_to_alg(added[0][0])
-
-            print(f"Move: {from_square} - {to_square}")
-            return from_square+to_square
-
-    # Capture
-    elif len(removed) == 1 and len(added) == 0: # 1 piece removed and none added:
-        for square in range(len(before_state)): # Check all squares
-            if before_state[square] != 0 and before_state[square] != removed[0][1]: # If square was occupied and of not removed square color:
-                if after_state[square] == removed[0][1]: # If this square now is the color of picked up piece:
-                    
-                    from_square = index_to_alg(removed[0][0])
-                    to_square = index_to_alg(square)
-                    
-                    print(f"Capture: {from_square} - {to_square}")
-                    return from_square+to_square
-
-    return "invalid" # No valid move found
+    return "invalid"
     
 def index_to_alg(board_index):
     return chess.square_name(board_index)
@@ -239,7 +215,7 @@ def player_turn(board):
     if button_pressed:
         button_pressed = False
         if not waiting_for_corrections:
-            move = infer_move(old_state, current_state)
+            move = infer_move_by_simulation(old_state, current_state, board)
             if move != "nomove": # there was something that moved:
                 if move == "invalid": # it could not be infered
                     print("cannot infer move, please put pieces to previous locations")
