@@ -5,7 +5,8 @@ Code for smart chess board
 - [x] Detect pieces being lifted and show legal moves  
 - [x] Add waiting for board setup before start  
 - [x] Add handling for when an illegal move is made  
-- [x] Add en passant, castling, and promotion  
+- [x] Add en passant, castling
+- [ ] Add promotion
 - [x] Add win condition checking  
 - [ ] LED stuff (effects, piece highlighting)  
   - [x] Piece highlighting  
