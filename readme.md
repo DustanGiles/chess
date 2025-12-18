@@ -18,6 +18,6 @@
 - [ ] Clean up code
 
 ## Hardware
-- [ ] Reprint 
+- [ ] Reprint tiles
 - [ ] Add electronics case
 - [ ] Add display and selection stuff
