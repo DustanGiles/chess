@@ -268,6 +268,62 @@ def player_turn(board):
             effects.clear()
             waiting_for_corrections = False
 
+def stockfish_turn(board):
+    global old_state
+    global old_state_for_lift_detection
+    global button_pressed
+    global waiting_for_corrections
+
+    current_state = ardunio_connect.read_sensors(arduino)
+
+    piece_position_highlights(current_state, True)
+
+    temp_board = board
+
+    engine_choice = engine.play(board, chess.engine.Limit(time=0.1))
+
+    temp_board.push(engine_choice.move)
+
+    expected_state = board_to_state(temp_board)
+    actual_state   = ardunio_connect.read_sensors(arduino)
+
+    # Show guidance
+    show_move_diff(expected_state, actual_state)
+
+    # Wait until user has physically made the move
+    wait_for_board_state(expected_state)
+
+    # Clear LED hints and commit
+    other_player_moves.clear()
+    ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
+
+    board = temp_board
+
+    old_state = ardunio_connect.read_sensors(arduino)
+
+    print(board)
+
+def wait_for_starting_setup():
+    # Wait until sensors match board position
+    target_state = board_to_state(board)
+
+    old_state = ardunio_connect.read_sensors(arduino)
+    old_state_for_lift_detection = ardunio_connect.read_sensors(arduino)
+
+    ready = False
+
+    while not ready:
+        current_state = ardunio_connect.read_sensors(arduino)
+        
+        piece_position_highlights(current_state, False)
+        
+        ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
+
+        if current_state == target_state:
+            ready = True
+
+    print("ready")
+
 setup()
 
 board = chess.Board()
@@ -330,25 +386,7 @@ ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
 
 time.sleep(2)
 
-# Wait until sensors match board position
-target_state = board_to_state(board)
-
-old_state = ardunio_connect.read_sensors(arduino)
-old_state_for_lift_detection = ardunio_connect.read_sensors(arduino)
-
-ready = False
-
-while not ready:
-    current_state = ardunio_connect.read_sensors(arduino)
-    
-    piece_position_highlights(current_state, False)
-    
-    ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
-
-    if current_state == target_state:
-        ready = True
-
-print("ready")
+wait_for_starting_setup()
 
 old_state = ardunio_connect.read_sensors(arduino)
 old_state_for_lift_detection = ardunio_connect.read_sensors(arduino)
@@ -358,6 +396,7 @@ while not board.is_checkmate():
         player_turn(board)
 
     elif board.turn == chess.BLACK:
-        player_turn(board)
+        stockfish_turn(board)
+        # player_turn(board)
 
 print("la fin")
