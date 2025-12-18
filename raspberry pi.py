@@ -80,16 +80,13 @@ def infer_move_by_simulation(before_state, after_state, board):
     Infers the move by simulating all legal moves and comparing resulting board states.
     Returns the move in UCI format if a match is found, else "invalid".
     """
-    if before_state != after_state:
-        for move in board.legal_moves:
-            temp_board = board.copy()
-            temp_board.push(move)
-            simulated_state = board_to_state(temp_board)
+    for move in board.legal_moves:
+        temp_board = board.copy()
+        temp_board.push(move)
+        simulated_state = board_to_state(temp_board)
 
-            if simulated_state == after_state:
-                return move.uci()
-    else:
-        return "nomove"
+        if simulated_state == after_state:
+            return move.uci()
 
     return "invalid"
     
@@ -379,9 +376,8 @@ try:
             # stockfish_turn(board)
 
         elif board.turn == chess.BLACK:
-            print("ai turn")
-            # player_turn(board)
-            stockfish_turn(board)
+            player_turn(board)
+            # stockfish_turn(board)
             
     print(board.outcome().winner)
 except KeyboardInterrupt:
