@@ -80,13 +80,16 @@ def infer_move_by_simulation(before_state, after_state, board):
     Infers the move by simulating all legal moves and comparing resulting board states.
     Returns the move in UCI format if a match is found, else "invalid".
     """
-    for move in board.legal_moves:
-        temp_board = board.copy()
-        temp_board.push(move)
-        simulated_state = board_to_state(temp_board)
+    if before_state != after_state:
+        for move in board.legal_moves:
+            temp_board = board.copy()
+            temp_board.push(move)
+            simulated_state = board_to_state(temp_board)
 
-        if simulated_state == after_state:
-            return move.uci()
+            if simulated_state == after_state:
+                return move.uci()
+    else:
+        return "nomove"
 
     return "invalid"
     
@@ -369,13 +372,24 @@ wait_for_starting_setup()
 old_state = ardunio_connect.read_sensors(arduino)
 old_state_for_lift_detection = ardunio_connect.read_sensors(arduino)
 
-while not board.is_checkmate():
-    if board.turn == chess.WHITE:
-        player_turn(board)
-        # stockfish_turn(board)
+try:
+    while not board.is_checkmate():
+        if board.turn == chess.WHITE:
+            player_turn(board)
+            # stockfish_turn(board)
 
-    elif board.turn == chess.BLACK:
-        stockfish_turn(board)
-        # player_turn(board)
+        elif board.turn == chess.BLACK:
+            print("ai turn")
+            # player_turn(board)
+            stockfish_turn(board)
+            
+    print(board.outcome().winner)
+except KeyboardInterrupt:
+    for layer in layers:
+        layer.clear()
 
-print("la fin")
+    ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
+    exit()
+
+
+
