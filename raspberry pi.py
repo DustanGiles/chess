@@ -369,23 +369,13 @@ wait_for_starting_setup()
 old_state = ardunio_connect.read_sensors(arduino)
 old_state_for_lift_detection = ardunio_connect.read_sensors(arduino)
 
-try:
-    while not board.is_checkmate():
-        if board.turn == chess.WHITE:
-            player_turn(board)
-            # stockfish_turn(board)
+while not board.is_checkmate():
+    if board.turn == chess.WHITE:
+        player_turn(board)
+        # stockfish_turn(board)
 
-        elif board.turn == chess.BLACK:
-            player_turn(board)
-            # stockfish_turn(board)
-            
-    print(board.outcome().winner)
-except KeyboardInterrupt:
-    for layer in layers:
-        layer.clear()
+    elif board.turn == chess.BLACK:
+        stockfish_turn(board)
+        # player_turn(board)
 
-    ardunio_connect.send_led_buffer(compose_layers(layers), arduino)
-    exit()
-
-
-
+print("la fin")

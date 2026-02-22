@@ -21,6 +21,7 @@ def connect_to_arduino(port, baud, timeout=1):
 
 def read_packet(ser):
     while True:
+        print("Waiting for serial data...")
         raw = ser.read_until(expected=END_CHAR)
         if not raw:
             continue
