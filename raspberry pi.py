@@ -122,9 +122,9 @@ def setup():
     arduino = ardunio_connect.connect_to_arduino(arduino_port, baud_rate)
 
     print(ardunio_connect.query_param("north_thresh", arduino))
-    ardunio_connect.change_param("north_thresh", 10, arduino)
+    ardunio_connect.change_param("north_thresh", 15, arduino)
     print(ardunio_connect.query_param("south_thresh", arduino))
-    ardunio_connect.change_param("south_thresh", 25, arduino)
+    ardunio_connect.change_param("south_thresh", 27, arduino)
     # ardunio_connect.change_param("bias", 5, arduino)
     # print(ardunio_connect.query_param("bias", arduino))
     print("average")
